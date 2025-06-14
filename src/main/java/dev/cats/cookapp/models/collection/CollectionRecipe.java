@@ -22,21 +22,21 @@ public class CollectionRecipe {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @MapsId("collectionId")
-    @JoinColumn(name="collection_id")
+    @JoinColumn(name = "collection_id")
     private RecipesCollection collection;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @MapsId("recipeId")
-    @JoinColumn(name="recipe_id")
+    @JoinColumn(name = "recipe_id")
     private Recipe recipe;
 
-    @Column(name="added_at", updatable = false, nullable = false)
+    @Column(name = "added_at", updatable = false, nullable = false)
     @CreationTimestamp
     private Timestamp addedAt;
 
-    public CollectionRecipe(RecipesCollection coll, Recipe rec) {
-        this.collection = coll;
-        this.recipe = rec;
-        this.id = new CollectionRecipeKey(coll.getId(), rec.getId());
+    public CollectionRecipe(final RecipesCollection coll, final Recipe rec) {
+        collection = coll;
+        recipe = rec;
+        id = new CollectionRecipeKey(coll.getId(), rec.getId());
     }
 }

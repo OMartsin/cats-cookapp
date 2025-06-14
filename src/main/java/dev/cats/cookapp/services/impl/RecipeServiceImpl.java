@@ -6,6 +6,8 @@ import dev.cats.cookapp.services.RecipeService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -15,18 +17,23 @@ public class RecipeServiceImpl implements RecipeService {
     RecipeRepository recipeRepository;
 
     @Override
-    public Recipe getRecipe(Long id) {
-        return recipeRepository.findById(id).orElseThrow();
+    public Recipe getRecipe(final Long id) {
+        return this.recipeRepository.findById(id).orElseThrow();
     }
 
     @Override
-    public Recipe saveRecipe(Recipe recipe) {
-        return recipeRepository.save(recipe);
+    public Page<Recipe> findAllByAuthorId(final String userId, final Pageable pageable) {
+        return this.recipeRepository.findAllByAuthorId(userId, pageable);
     }
 
     @Override
-    public void deleteRecipe(Long id) {
-        recipeRepository.deleteById(id);
+    public Recipe saveRecipe(final Recipe recipe) {
+        return this.recipeRepository.save(recipe);
+    }
+
+    @Override
+    public void deleteRecipe(final Long id) {
+        this.recipeRepository.deleteById(id);
     }
 
 }

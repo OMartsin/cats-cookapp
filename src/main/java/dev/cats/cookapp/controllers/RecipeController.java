@@ -1,11 +1,14 @@
 package dev.cats.cookapp.controllers;
 
 import dev.cats.cookapp.dtos.request.recipe.RecipeRequest;
+import dev.cats.cookapp.dtos.response.PageResponse;
+import dev.cats.cookapp.dtos.response.recipe.RecipeInListResponse;
 import dev.cats.cookapp.dtos.response.recipe.RecipeResponse;
 import dev.cats.cookapp.services.RecipeAPIService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -16,28 +19,34 @@ public class RecipeController {
     RecipeAPIService recipeAPIService;
 
     @GetMapping("/{id}")
-    public RecipeResponse getRecipe(@PathVariable("id") Long id) {
-        return recipeAPIService.getRecipe(id);
+    public RecipeResponse getRecipe(@PathVariable("id") final Long id) {
+        return this.recipeAPIService.getRecipe(id);
     }
 
-    @PostMapping("/{userId}")
-    public RecipeResponse createRecipe(@RequestBody RecipeRequest recipeRequest, @PathVariable("userId") String userId) {
-        return recipeAPIService.saveRecipe(recipeRequest, userId);
+    @GetMapping("/my")
+    public PageResponse<RecipeInListResponse> getMyRecipes(@RequestHeader("x-user-id") final String userId,
+                                                           @RequestParam(name = "page", defaultValue = "1") final Integer page,
+                                                           @RequestParam(name = "size", defaultValue = "10") final Integer size) {
+        return this.recipeAPIService.getRecipesByUserId(userId, PageRequest.of(page - 1, size));
     }
 
-    @PutMapping("/{id}/{userId}")
-    public RecipeResponse updateRecipe(@RequestBody RecipeRequest recipeRequest, @PathVariable("id") Long id, @PathVariable("userId") String userId) {
-        if (recipeRequest.getId() == null) {
+    @PostMapping
+    public RecipeResponse createRecipe(@RequestBody final RecipeRequest recipeRequest, @RequestHeader("x-user-id") final String userId) {
+        return this.recipeAPIService.saveRecipe(recipeRequest, userId);
+    }
+
+    @PutMapping("/{id}")
+    public RecipeResponse updateRecipe(@RequestBody final RecipeRequest recipeRequest, @PathVariable("id") final Long id, @RequestHeader("x-user-id") final String userId) {
+        if (null == recipeRequest.getId()) {
             throw new IllegalArgumentException("Recipe ID must be provided");
-        }
-        else {
+        } else {
             recipeRequest.setId(id);
         }
-        return recipeAPIService.saveRecipe(recipeRequest, userId);
+        return this.recipeAPIService.saveRecipe(recipeRequest, userId);
     }
 
-    @DeleteMapping("/{id}/{userId}")
-    public void deleteRecipe(@PathVariable("id") Long id, @PathVariable("userId") String userId) {
-        recipeAPIService.deleteRecipe(id, userId);
+    @DeleteMapping("/{id}")
+    public void deleteRecipe(@PathVariable("id") final Long id, @RequestHeader("x-user-id") final String userId) {
+        this.recipeAPIService.deleteRecipe(id, userId);
     }
 }

@@ -1,6 +1,7 @@
 package dev.cats.cookapp.controllers;
 
 import dev.cats.cookapp.dtos.request.CollectionRequest;
+import dev.cats.cookapp.dtos.response.CollectionListPreviewResponse;
 import dev.cats.cookapp.dtos.response.collection.CollectionListResponse;
 import dev.cats.cookapp.dtos.response.collection.FullCollectionResponse;
 import dev.cats.cookapp.services.RecipeCollectionService;
@@ -13,7 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/recipes/collection/{userId}")
+@RequestMapping("/recipes/collection")
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @RequiredArgsConstructor
 public class RecipeCollectionController {
@@ -21,18 +22,24 @@ public class RecipeCollectionController {
 
     @GetMapping
     public ResponseEntity<CollectionListResponse> getCollections(
-            @PathVariable String userId
+            @RequestHeader("x-user-id") String userId
     ) {
-        CollectionListResponse resp = recipeCollectionService.getCollections(userId);
-        return ResponseEntity.ok(resp);
+        return ResponseEntity.ok(this.recipeCollectionService.getCollections(userId));
+    }
+
+    @GetMapping("/preview")
+    public ResponseEntity<CollectionListPreviewResponse> getCollectionsPreview(
+            @RequestHeader("x-user-id") String userId
+    ) {
+        return ResponseEntity.ok(this.recipeCollectionService.getCollectionsPreview(userId));
     }
 
     @PostMapping
     public ResponseEntity<FullCollectionResponse> addCollection(
-            @PathVariable String userId,
+            @RequestHeader("x-user-id") String userId,
             @Valid @RequestBody CollectionRequest request
     ) {
-        var created = recipeCollectionService.addCollection(userId, request);
+        var created = this.recipeCollectionService.addCollection(userId, request);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(created);
@@ -40,50 +47,50 @@ public class RecipeCollectionController {
 
     @GetMapping("/{collectionId}")
     public ResponseEntity<FullCollectionResponse> getCollectionById(
-            @PathVariable String userId,
+            @RequestHeader("x-user-id") String userId,
             @PathVariable Long collectionId
     ) {
-        var resp = recipeCollectionService.getCollectionById(userId, collectionId);
+        var resp = this.recipeCollectionService.getCollectionById(userId, collectionId);
         return ResponseEntity.ok(resp);
     }
 
     @PutMapping("/{collectionId}")
     public ResponseEntity<FullCollectionResponse> updateCollection(
-            @PathVariable String userId,
+            @RequestHeader("x-user-id") String userId,
             @PathVariable Long collectionId,
             @Valid @RequestBody CollectionRequest request
     ) {
         request.setId(collectionId);
-        var updated = recipeCollectionService.updateCollection(userId, request);
+        final var updated = this.recipeCollectionService.updateCollection(userId, request);
         return ResponseEntity.ok(updated);
     }
 
     @DeleteMapping("/{collectionId}")
     public ResponseEntity<Void> deleteCollection(
-            @PathVariable String userId,
-            @PathVariable Long collectionId
+            @RequestHeader("x-user-id") final String userId,
+            @PathVariable final Long collectionId
     ) {
-        recipeCollectionService.deleteCollection(userId, collectionId);
+        this.recipeCollectionService.deleteCollection(userId, collectionId);
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{collectionId}/recipe")
     public ResponseEntity<FullCollectionResponse> addRecipeToCollection(
-            @PathVariable String userId,
-            @PathVariable Long collectionId,
-            @RequestParam("recipeId") Long recipeId
+            @RequestHeader("x-user-id") final String userId,
+            @PathVariable final Long collectionId,
+            @RequestParam("recipeId") final Long recipeId
     ) {
-        var resp = recipeCollectionService.addRecipeToCollection(userId, collectionId, recipeId);
+        final var resp = this.recipeCollectionService.addRecipeToCollection(userId, collectionId, recipeId);
         return ResponseEntity.ok(resp);
     }
 
     @DeleteMapping("/{collectionId}/recipe/{recipeId}")
     public ResponseEntity<FullCollectionResponse> removeRecipeFromCollection(
-            @PathVariable String userId,
-            @PathVariable Long collectionId,
-            @PathVariable Long recipeId
+            @RequestHeader("x-user-id") final String userId,
+            @PathVariable final Long collectionId,
+            @PathVariable final Long recipeId
     ) {
-        var resp = recipeCollectionService.removeRecipeFromCollection(userId, collectionId, recipeId);
+        final var resp = this.recipeCollectionService.removeRecipeFromCollection(userId, collectionId, recipeId);
         return ResponseEntity.ok(resp);
     }
 }

@@ -36,7 +36,7 @@ public class RecipesCollection {
     @Column(nullable = false)
     private String description;
 
-    @Column(name="created_at", updatable = false, nullable = false)
+    @Column(name = "created_at", updatable = false, nullable = false)
     @CreationTimestamp
     private Timestamp createdAt;
 
@@ -53,16 +53,16 @@ public class RecipesCollection {
 
     public void addRecipe(Recipe recipe) {
         CollectionRecipe cr = new CollectionRecipe(this, recipe);
-        collectionRecipes.add(cr);
+        this.collectionRecipes.add(cr);
     }
 
     public void removeRecipe(Recipe recipe) {
-        collectionRecipes.removeIf(cr -> cr.getRecipe().equals(recipe));
+        this.collectionRecipes.removeIf(cr -> cr.getRecipe().equals(recipe));
     }
 
     @Transient
     public Set<Recipe> getRecipes() {
-        return collectionRecipes.stream()
+        return this.collectionRecipes.stream()
                 .map(CollectionRecipe::getRecipe)
                 .collect(Collectors.toSet());
     }
