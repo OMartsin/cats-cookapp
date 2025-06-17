@@ -10,8 +10,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.memory.repository.jdbc.JdbcChatMemoryRepository;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
@@ -61,24 +63,39 @@ public class ChatHistoryServiceImpl implements ChatHistoryService {
     }
 
     public ChatCompletionResponse getInitialChat(final String userId) throws AccessDeniedException {
-        Chat chat = new Chat(UUID.randomUUID().toString(), userId);
+        var chat = createInitialChat(userId, null);
+        return getByConversationId(userId, chat.getConversationId());
+    }
+
+    public Chat createInitialChat(final String userId, String chatId) {
+        if (chatId == null || chatId.isEmpty()) {
+            chatId = UUID.randomUUID().toString();
+        }
+        Chat chat = new Chat(chatId, userId);
         this.chatsRepository.save(chat);
 
         try {
             var content = Map.of("message", DEFAULT_ASSISTANT_MESSAGE, "messageType", "TEXT");
-            memoryRepository.saveAll(chat.getConversationId(),
-                    List.of(new AssistantMessage(this.mapper.writeValueAsString(content))));
+            var message = new AssistantMessage(this.mapper.writeValueAsString(content));
+            var history = memoryRepository.findByConversationId(chat.getConversationId());
+            if (history.isEmpty()) {
+                memoryRepository.saveAll(chat.getConversationId(), List.of(message));
+            }
         }
         catch (final JsonProcessingException e) {
             throw new RuntimeException(e);
         }
-        return getByConversationId(userId, chat.getConversationId());
+        return chat;
     }
 
     private ChatMessage toChatMessage(final Message message) {
         Object content;
         try {
-            content = this.mapper.readValue(message.getText(), Object.class);
+            if (message instanceof AssistantMessage || message instanceof ToolResponseMessage) {
+                content = this.mapper.readValue(message.getText(), Object.class);
+            } else {
+                content = message.getText();
+            }
         } catch (final IOException ex) {
             content = message.getText();
         }
@@ -86,5 +103,17 @@ public class ChatHistoryServiceImpl implements ChatHistoryService {
                 .role(ChatMessageRole.valueOf(message.getMessageType().name()))
                 .content(content)
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public void delete(final String userId, final String chatId) throws AccessDeniedException {
+        var conversation = this.chatsRepository.findByUserIdAndConversationId(userId, chatId);
+        if (conversation.isEmpty()) {
+            throw new AccessDeniedException("Chat not found or belongs to another user");
+        }
+        var conversationId = conversation.get().getConversationId();
+        this.chatsRepository.deleteByConversationId(conversationId);
+        this.memoryRepository.deleteByConversationId(conversationId);
     }
 }
